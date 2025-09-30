@@ -107,7 +107,7 @@ Suivez ces étapes pour configurer et lancer le projet en local.
 3.  **Configurer les variables d'environnement :**
     Créez un fichier `.env` à la racine du projet en copiant le modèle `.env.example` et remplissez les valeurs.
     ```bash
-    cp .env.example .env
+    touch .env
     ```
     Modifiez ensuite le fichier `.env` avec vos propres configurations.
 
