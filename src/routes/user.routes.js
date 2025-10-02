@@ -16,4 +16,9 @@ router.get('/me', auth, userController.getMe);
 // @access  Private (Passager)
 router.put('/become-chauffeur', auth, authorize('passager'), requestChauffeurValidation, userController.requestChauffeurStatus);
 
+// @route   GET /api/users/me/trips
+// @desc    Obtenir les trajets de l'utilisateur connecté
+// @access  Private (Chauffeur)
+router.get('/me/trips', auth, authorize('chauffeur'), userController.getMyTrips);
+
 module.exports = router;

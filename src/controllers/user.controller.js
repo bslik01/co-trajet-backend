@@ -1,4 +1,5 @@
 const User = require('../models/User.model');
+const Trip = require('../models/Trip.model');
 const { validationResult } = require('express-validator');
 
 // @desc    Obtenir le profil de l'utilisateur connecté
@@ -156,6 +157,20 @@ exports.rejectChauffeurRequest = async (req, res) => {
     if (error.kind === 'ObjectId') {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
+    res.status(500).send('Erreur Serveur');
+  }
+};
+
+// @desc    Obtenir les trajets publiés par l'utilisateur connecté
+// @route   GET /api/users/me/trips
+// @access  Private (Chauffeur)
+exports.getMyTrips = async (req, res) => {
+  try {
+    // req.user.id est l'ID du chauffeur connecté
+    const trips = await Trip.find({ conducteur: req.user.id }).sort({ dateDepart: -1 }); // Tri du plus récent au plus ancien
+    res.json({ message: 'Vos trajets publiés.', trips });
+  } catch (error) {
+    console.error(error.message);
     res.status(500).send('Erreur Serveur');
   }
 };
