@@ -19,6 +19,6 @@ router.get('/', searchTripsValidation, tripController.getTrips);
 // @route   GET /api/trips/:id
 // @desc    Obtenir les détails d'un trajet spécifique
 // @access  Public
-router.get('/:id', tripController.getTripById);
+router.get('/:id', auth, tripController.getTripById);
 
 module.exports = router;
