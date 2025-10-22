@@ -21,4 +21,9 @@ router.put('/become-chauffeur', auth, authorize('passager'), requestChauffeurVal
 // @access  Private (Chauffeur)
 router.get('/me/trips', auth, authorize('chauffeur'), userController.getMyTrips);
 
+// @route   GET /api/users/me/bookings
+// @desc    Obtenir les réservations de l'utilisateur connecté
+// @access  Private
+router.get('/me/bookings', auth, userController.getMyBookings);
+
 module.exports = router;

@@ -1,5 +1,6 @@
 const User = require('../models/User.model');
 const Trip = require('../models/Trip.model');
+const Booking = require('../models/Booking.model');
 const { validationResult } = require('express-validator');
 
 // @desc    Obtenir le profil de l'utilisateur connecté
@@ -169,6 +170,28 @@ exports.getMyTrips = async (req, res) => {
     // req.user.id est l'ID du chauffeur connecté
     const trips = await Trip.find({ conducteur: req.user.id }).sort({ dateDepart: -1 }); // Tri du plus récent au plus ancien
     res.json({ message: 'Vos trajets publiés.', trips });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send('Erreur Serveur');
+  }
+};
+
+// @desc    Obtenir les réservations de l'utilisateur connecté
+// @route   GET /api/users/me/bookings
+// @access  Private
+exports.getMyBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find({ passenger: req.user.id })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: 'trip',
+        populate: {
+          path: 'conducteur',
+          select: 'nom email' // Pour afficher les infos du conducteur dans la réservation
+        }
+      });
+    
+    res.json({ message: 'Vos réservations.', bookings });
   } catch (error) {
     console.error(error.message);
     res.status(500).send('Erreur Serveur');

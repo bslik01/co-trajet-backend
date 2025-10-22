@@ -44,3 +44,7 @@ exports.rejectChauffeurValidation = [
 exports.idParamValidation = [
   param('id', 'L\'ID fourni n\'est pas valide').isMongoId(),
 ];
+
+exports.bookTripValidation = [
+  body('seatsBooked', 'Le nombre de places à réserver est requis et doit être un entier positif').isInt({ min: 1 }),
+];

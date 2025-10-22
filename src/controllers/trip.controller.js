@@ -1,6 +1,7 @@
 // src/controllers/trip.controller.js
 const Trip = require('../models/Trip.model');
-const User = require('../models/User.model'); // Pour "populer" les infos du conducteur
+const User = require('../models/User.model');
+const Booking = require('../models/Booking.model');
 const { validationResult } = require('express-validator');
 
 // @desc    Créer un nouveau trajet
@@ -96,6 +97,162 @@ exports.getTripById = async (req, res) => {
     if (error.kind === 'ObjectId') {
       return res.status(404).json({ message: 'Trajet non trouvé.' });
     }
+    res.status(500).send('Erreur Serveur');
+  }
+};
+
+// @desc    Réserver une place sur un trajet
+// @route   POST /api/trips/:id/book
+// @access  Private
+exports.bookTrip = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { seatsBooked } = req.body;
+  const tripId = req.params.id;
+  const passengerId = req.user.id; // ID du passager depuis le token JWT
+
+  try {
+    const trip = await Trip.findById(tripId);
+
+    if (!trip) {
+      return res.status(404).json({ message: 'Trajet non trouvé.' });
+    }
+
+    // Vérification 1: L'utilisateur ne peut pas réserver son propre trajet
+    if (trip.conducteur.toString() === passengerId) {
+      return res.status(400).json({ message: 'Vous ne pouvez pas réserver une place sur votre propre trajet.' });
+    }
+    
+    // Vérification 2: Le trajet est-il dans le futur ?
+    if (new Date(trip.dateDepart) < new Date()) {
+      return res.status(400).json({ message: 'Ce trajet est déjà passé.' });
+    }
+
+    // Vérification 3: Y a-t-il assez de places ?
+    if (trip.placesDisponibles < seatsBooked) {
+      return res.status(400).json({ message: `Il ne reste que ${trip.placesDisponibles} places disponibles.` });
+    }
+
+    // Vérification 4: L'utilisateur a-t-il déjà réservé ?
+    const existingBooking = await Booking.findOne({ trip: tripId, passenger: passengerId });
+    if (existingBooking) {
+      return res.status(400).json({ message: 'Vous avez déjà une réservation pour ce trajet.' });
+    }
+
+    // Tout est bon, on crée la réservation
+    const newBooking = new Booking({
+      trip: tripId,
+      passenger: passengerId,
+      seatsBooked,
+    });
+
+    await newBooking.save();
+
+    // Mettre à jour les places disponibles sur le trajet
+    trip.placesDisponibles -= seatsBooked;
+    await trip.save();
+
+    res.status(201).json({ message: 'Réservation confirmée avec succès.', booking: newBooking });
+
+  } catch (error) {
+    console.error(error.message);
+    if (error.kind === 'ObjectId') {
+      return res.status(404).json({ message: 'Trajet non trouvé.' });
+    }
+    res.status(500).send('Erreur Serveur');
+  }
+};
+
+// @desc    Obtenir les passagers d'un trajet
+// @route   GET /api/trips/:id/passengers
+// @access  Private (Chauffeur du trajet)
+exports.getTripPassengers = async (req, res) => {
+  try {
+    const trip = await Trip.findById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trajet non trouvé.' });
+    }
+    
+    // Seul le conducteur du trajet peut voir les passagers
+    if (trip.conducteur.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès non autorisé. Vous n\'êtes pas le chauffeur de ce trajet.' });
+    }
+
+    const bookings = await Booking.find({ trip: req.params.id })
+      .populate('passenger', 'nom email'); // Récupérer le nom et l'email du passager
+
+    res.json({ message: 'Passagers du trajet.', passengers: bookings });
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send('Erreur Serveur');
+  }
+};
+
+// @desc    Modifier un trajet
+// @route   PUT /api/trips/:id
+// @access  Private (Chauffeur du trajet)
+exports.updateTrip = async (req, res) => {
+  // La validation peut être la même que pour la création
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    let trip = await Trip.findById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trajet non trouvé.' });
+    }
+
+    // Vérifier que c'est bien le chauffeur qui modifie
+    if (trip.conducteur.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès non autorisé.' });
+    }
+
+    // Empêcher la modification si des réservations existent déjà (logique simplifiée pour le MVP)
+    const bookings = await Booking.find({ trip: req.params.id });
+    if (bookings.length > 0) {
+      return res.status(400).json({ message: 'Impossible de modifier un trajet avec des réservations existantes.' });
+    }
+
+    // Mettre à jour les champs
+    trip = await Trip.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
+    res.json({ message: 'Trajet mis à jour.', trip });
+
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).send('Erreur Serveur');
+  }
+};
+
+// @desc    Supprimer un trajet
+// @route   DELETE /api/trips/:id
+// @access  Private (Chauffeur du trajet)
+exports.deleteTrip = async (req, res) => {
+  try {
+    let trip = await Trip.findById(req.params.id);
+    if (!trip) {
+      return res.status(404).json({ message: 'Trajet non trouvé.' });
+    }
+
+    if (trip.conducteur.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès non autorisé.' });
+    }
+
+    // Logique d'annulation : supprimer le trajet ET les réservations associées
+    await Booking.deleteMany({ trip: req.params.id });
+    await Trip.findByIdAndRemove(req.params.id);
+
+    // TODO: Envoyer des notifications aux passagers
+    
+    res.json({ message: 'Trajet et réservations associées supprimés.' });
+
+  } catch (error) {
+    console.error(error.message);
     res.status(500).send('Erreur Serveur');
   }
 };
