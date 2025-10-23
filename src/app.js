@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 const tripRoutes = require('./routes/trip.routes');
 const userRoutes = require('./routes/user.routes');
 const adminRoutes = require('./routes/admin.routes');
+const uploadRoutes = require('./routes/upload.routes');
 const createDefaultAdmin = require('./utils/createDefaultAdmin');
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/uploads', uploadRoutes);
 
 // Route de test
 app.get('/', (req, res) => {

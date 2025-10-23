@@ -1,6 +1,13 @@
 // src/models/User.model.js
 const mongoose = require('mongoose');
 
+// Sous-schéma réutilisable pour chaque document
+const documentStatusSchema = new mongoose.Schema({
+  url: { type: String, trim: true, default: '' },
+  status: { type: String, enum: ['not_submitted', 'pending', 'approved', 'rejected'], default: 'not_submitted' },
+  rejectionReason: { type: String, trim: true, default: '' },
+}, { _id: false });
+
 const userSchema = new mongoose.Schema({
   nom: {
     type: String,
@@ -13,7 +20,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     lowercase: true,
     trim: true,
-    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Veuillez utiliser une adresse e-mail valide'] // Validation Regex
+    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Veuillez utiliser une adresse e-mail valide']
   },
   motDePasseHash: {
     type: String,
@@ -22,32 +29,47 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ['passager', 'chauffeur', 'admin'],
-    default: 'passager',
-    required: true
+    default: 'passager'
   },
   isChauffeurVerified: {
     type: Boolean,
     default: false
   },
-  chauffeurRequestStatus: {
-    type: String,
-    enum: ['none', 'pending', 'approved', 'rejected'],
-    default: 'none'
+
+  // --- SECTION PROFIL CHAUFFEUR RENFORCÉE ---
+  chauffeurProfile: {
+    requestStatus: {
+      type: String,
+      enum: ['none', 'pending', 'needs_revision', 'approved', 'rejected'],
+      default: 'none'
+    },
+    
+    identityDocuments: {
+      idCard: { type: documentStatusSchema, default: () => ({}) },
+      driverLicense: { type: documentStatusSchema, default: () => ({}) },
+      profilePicture: { type: documentStatusSchema, default: () => ({}) },
+    },
+
+    vehicleDetails: {
+      make: { type: String, trim: true, default: '' },       // Marque
+      model: { type: String, trim: true, default: '' },      // Modèle
+      year: { type: Number, min: 1990 },
+      color: { type: String, trim: true, default: '' },
+      licensePlate: { type: String, trim: true, uppercase: true, default: '' }, // Immatriculation
+    },
+
+    vehicleDocuments: {
+      vehicleRegistration: { type: documentStatusSchema, default: () => ({}) }, // Carte Grise
+      technicalInspection: { type: documentStatusSchema, default: () => ({}) }, // Visite Technique
+      insuranceCertificate: { type: documentStatusSchema, default: () => ({}) }, // Attestation d'Assurance
+      vehiclePictureFront: { type: documentStatusSchema, default: () => ({}) },    // Photo avant
+      vehiclePictureSide: { type: documentStatusSchema, default: () => ({}) },     // Photo côté
+    },
+
+    submittedAt: { type: Date }
   },
-  chauffeurRequestMessage: {
-    type: String,
-    trim: true
-  },
-  permisConduireUrl: {
-    type: String,
-    trim: true
-  },
-  carteGriseUrl: {
-    type: String,
-    trim: true
-  },
-}, {
-  timestamps: true // Ajoute createdAt et updatedAt automatiquement
+}, { 
+  timestamps: true 
 });
 
 module.exports = mongoose.model('User', userSchema);

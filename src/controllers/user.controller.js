@@ -19,145 +19,79 @@ exports.getMe = async (req, res) => {
   }
 };
 
-// @desc    Demander le statut de chauffeur
-// @route   PUT /api/users/become-chauffeur
+// @desc    Soumettre ou Mettre à jour la demande pour devenir chauffeur
+// @route   POST /api/users/become-chauffeur
 // @access  Private (Passager)
-exports.requestChauffeurStatus = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { permisConduireUrl, carteGriseUrl } = req.body;
+exports.submitChauffeurApplication = async (req, res) => {
+  // Le frontend envoie un objet contenant les sous-objets mis à jour
+  const { identityDocuments, vehicleDetails, vehicleDocuments } = req.body;
 
   try {
-    let user = await User.findById(req.user.id);
-
+    const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
     }
 
-    if (user.role === 'chauffeur' && user.isChauffeurVerified) {
+    if (user.isChauffeurVerified) {
       return res.status(400).json({ message: 'Vous êtes déjà un chauffeur vérifié.' });
     }
-    if (user.chauffeurRequestStatus === 'pending') {
-      return res.status(400).json({ message: 'Votre demande de chauffeur est déjà en attente de validation.' });
+    
+    // Initialise le profil si c'est la première demande
+    if (!user.chauffeurProfile || user.chauffeurProfile.requestStatus === 'none' || user.chauffeurProfile.requestStatus === 'rejected') {
+       user.chauffeurProfile = { requestStatus: 'pending' };
+    } else {
+      // Repasse en 'pending' si c'était en 'needs_revision'
+      user.chauffeurProfile.requestStatus = 'pending';
     }
 
-    user.permisConduireUrl = permisConduireUrl;
-    user.carteGriseUrl = carteGriseUrl;
-    user.chauffeurRequestStatus = 'pending';
-    user.chauffeurRequestMessage = '';
+    user.chauffeurProfile.submittedAt = new Date();
+
+    // Mise à jour des détails textuels du véhicule
+    if (vehicleDetails) {
+        user.chauffeurProfile.vehicleDetails = { ...user.chauffeurProfile.vehicleDetails, ...vehicleDetails };
+    }
+    
+    // Mise à jour des URLs des documents et réinitialisation de leur statut à 'pending'
+    const updateDocument = (docPath, data) => {
+      // Exemple: docPath = 'identityDocuments.idCard'
+      if (data && data.url) {
+        const pathParts = docPath.split('.'); // ['identityDocuments', 'idCard']
+        let currentLevel = user.chauffeurProfile;
+        for (let i = 0; i < pathParts.length - 1; i++) {
+            currentLevel = currentLevel[pathParts[i]];
+        }
+        const finalKey = pathParts[pathParts.length - 1];
+        
+        currentLevel[finalKey] = {
+            url: data.url,
+            status: 'pending',
+            rejectionReason: ''
+        };
+      }
+    };
+    
+    // Itérer sur les documents fournis dans la requête pour les mettre à jour
+    if (identityDocuments) {
+        for (const key in identityDocuments) {
+            updateDocument(`identityDocuments.${key}`, identityDocuments[key]);
+        }
+    }
+    if (vehicleDocuments) {
+        for (const key in vehicleDocuments) {
+            updateDocument(`vehicleDocuments.${key}`, vehicleDocuments[key]);
+        }
+    }
 
     await user.save();
+    
+    const updatedUser = await User.findById(req.user.id).select('-motDePasseHash');
 
-    const userObj = user.toObject();
-    delete userObj.motDePasseHash;
+    // TODO: Envoyer un email à l'admin pour l'informer d'une nouvelle demande
 
-    res.json({
-      message: 'Demande de statut chauffeur soumise avec succès. En attente de validation.',
-      user: userObj
-    });
-
+    res.json({ message: 'Demande soumise avec succès. Elle sera examinée prochainement.', user: updatedUser });
+  
   } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Erreur Serveur');
-  }
-};
-
-// @desc    Obtenir toutes les demandes de chauffeur en attente
-// @route   GET /api/admin/chauffeur-requests
-// @access  Private (Admin)
-exports.getChauffeurRequests = async (req, res) => {
-  try {
-    const requests = await User.find({ chauffeurRequestStatus: 'pending' }).select('-motDePasseHash');
-    res.json({ message: 'Demandes de chauffeurs en attente.', requests });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send('Erreur Serveur');
-  }
-};
-
-// @desc    Valider/Approuver une demande de chauffeur
-// @route   PUT /api/admin/chauffeur-requests/:id/approve
-// @access  Private (Admin)
-exports.approveChauffeurRequest = async (req, res) => {
-  try {
-    let user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
-
-    if (user.chauffeurRequestStatus !== 'pending') {
-      return res.status(400).json({ message: 'Cette demande n\'est pas en attente de validation.' });
-    }
-
-    user.role = 'chauffeur';
-    user.isChauffeurVerified = true;
-    user.chauffeurRequestStatus = 'approved';
-    user.chauffeurRequestMessage = 'Votre demande a été approuvée.';
-
-    await user.save();
-
-    const userObj = user.toObject();
-    delete userObj.motDePasseHash;
-
-    res.json({
-      message: `Le chauffeur ${user.nom} a été approuvé.`,
-      user: userObj
-    });
-
-  } catch (error) {
-    console.error(error.message);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
-    res.status(500).send('Erreur Serveur');
-  }
-};
-
-// @desc    Rejeter une demande de chauffeur
-// @route   PUT /api/admin/chauffeur-requests/:id/reject
-// @access  Private (Admin)
-exports.rejectChauffeurRequest = async (req, res) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { chauffeurRequestMessage } = req.body;
-
-  try {
-    let user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
-
-    if (user.chauffeurRequestStatus !== 'pending') {
-      return res.status(400).json({ message: 'Cette demande n\'est pas en attente de validation.' });
-    }
-
-    user.isChauffeurVerified = false;
-    user.chauffeurRequestStatus = 'rejected';
-    user.chauffeurRequestMessage = chauffeurRequestMessage || 'Votre demande a été rejetée.';
-
-    await user.save();
-
-    const userObj = user.toObject();
-    delete userObj.motDePasseHash;
-
-    res.json({
-      message: `La demande du chauffeur ${user.nom} a été rejetée.`,
-      user: userObj
-    });
-
-  } catch (error) {
-    console.error(error.message);
-    if (error.kind === 'ObjectId') {
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
-    }
+    console.error('Erreur de soumission de la demande chauffeur :', error.message);
     res.status(500).send('Erreur Serveur');
   }
 };
