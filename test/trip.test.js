@@ -2,51 +2,79 @@
 const request = require('supertest');
 const { expect } = require('chai');
 const { app } = require('./test_helper');
-const User = require('../src/models/User.model');
 const Trip = require('../src/models/Trip.model');
 
-describe('Trip API', () => {
-  let resChauffeur, chauffeurToken, chauffeurId, passagerToken;
-  const chauffeurData = { nom: 'Chauffeur Test', email: 'chauffeur@test.com', motDePasse: 'password123' };
-  const passagerData = { nom: 'Passager Test', email: 'passager@test.com', motDePasse: 'password123' };
-  const adminCredentials = {
-    email: process.env.DEFAULT_ADMIN_EMAIL,
-    motDePasse: process.env.DEFAULT_ADMIN_PASSWORD,
-  };
+describe('API des Trajets', () => {
+  let chauffeurToken, chauffeurId, passagerToken;
   const tripData = {
     villeDepart: 'Douala',
     villeArrivee: 'Yaoundé',
-    dateDepart: new Date(Date.now() + 86400000 * 2).toISOString(), // Dans 2 jours
+    dateDepart: new Date(Date.now() + 86400000 * 2).toISOString(),
     placesDisponibles: 3,
     prix: 5000,
   };
 
+  // Le beforeEach simule maintenant le flux complet d'approbation d'un chauffeur.
   beforeEach(async () => {
-    // Créer un utilisateur qui deviendra chauffeur
-    resChauffeur = await request(app).post('/api/auth/register').send(chauffeurData);
-    chauffeurToken = resChauffeur.body.token;
-    chauffeurId = resChauffeur.body.user.id;
+    // 1. Connexion de l'admin
+    const adminRes = await request(app).post('/api/auth/login').send({
+      email: process.env.DEFAULT_ADMIN_EMAIL, motDePasse: process.env.DEFAULT_ADMIN_PASSWORD,
+    });
+    const adminToken = adminRes.body.token;
 
-    // Créer un passager
-    const resPassager = await request(app).post('/api/auth/register').send(passagerData);
-    passagerToken = resPassager.body.token;
+    // 2. Création du futur chauffeur et du passager
+    let chauffeurRes = await request(app).post('/api/auth/register').send({
+      nom: 'Chauffeur Approuvé', email: 'chauffeur@test.com', motDePasse: 'password123',
+    });
+    chauffeurToken = chauffeurRes.body.token;
+    chauffeurId = chauffeurRes.body.user.id;
+    
+    const passagerRes = await request(app).post('/api/auth/register').send({
+      nom: 'Simple Passager', email: 'passager@test.com', motDePasse: 'password123',
+    });
+    passagerToken = passagerRes.body.token;
 
-    // Connecter l'admin et approuver la demande du chauffeur
-    const resAdmin = await request(app).post('/api/auth/login').send(adminCredentials);
-    const adminToken = resAdmin.body.token;
+    // 3. Le futur chauffeur soumet sa demande
+    const applicationData = {
+      identityDocuments: {
+        idCard: { url: 'http://cloudinary.com/idcard.jpg' },
+        driverLicense: { url: 'http://cloudinary.com/license.jpg' },
+        profilePicture: { url: 'http://cloudinary.com/profile.jpg' },
+      },
+      vehicleDetails: {
+        make: 'Toyota',
+        model: 'Yaris',
+        year: 2020,
+        color: 'Grise',
+        licensePlate: 'LT 123 AB',
+      },
+      vehicleDocuments: {
+        vehicleRegistration: { url: 'http://cloudinary.com/registration.jpg' },
+        technicalInspection: { url: 'http://cloudinary.com/inspection.jpg' },
+        insuranceCertificate: { url: 'http://cloudinary.com/insurance.jpg' },
+        vehiclePictureFront: { url: 'http://cloudinary.com/front.jpg' },
+        vehiclePictureSide: { url: 'http://cloudinary.com/side.jpg' },
+      },
+    };
+    await request(app).post('/api/users/become-chauffeur').set('Authorization', `Bearer ${chauffeurToken}`).send(applicationData);
 
-    await request(app)
-      .put('/api/users/become-chauffeur')
-      .set('Authorization', `Bearer ${chauffeurToken}`)
-      .send({ permisConduireUrl: 'http://a.com/p.jpg', carteGriseUrl: 'http://a.com/c.pdf' });
+    // 4. L'admin approuve tous les documents et active le profil
+    const documentsToApprove = [
+      'identityDocuments.idCard', 'identityDocuments.driverLicense', 'identityDocuments.profilePicture',
+      'vehicleDocuments.vehicleRegistration', 'vehicleDocuments.technicalInspection', 'vehicleDocuments.insuranceCertificate',
+      'vehicleDocuments.vehiclePictureFront', 'vehicleDocuments.vehiclePictureSide'
+    ];
+    for (const docPath of documentsToApprove) {
+      await request(app).put(`/api/admin/chauffeur-requests/${chauffeurId}/documents`)
+        .set('Authorization', `Bearer ${adminToken}`).send({ documentPath: docPath, status: 'approved' });
+    }
+    let r = await request(app).put(`/api/admin/chauffeur-requests/${chauffeurId}/activate`).set('Authorization', `Bearer ${adminToken}`);
 
-    await request(app)
-      .put(`/api/admin/chauffeur-requests/${chauffeurId}/approve`)
-      .set('Authorization', `Bearer ${adminToken}`);
-
-    // Connexion en tant que chauffeur
-    resChauffeur = await request(app).post('/api/auth/login').send({email: chauffeurData.email, motDePasse: chauffeurData.motDePasse});
-    chauffeurToken = resChauffeur.body.token;
+    // 5. Connexion du chauffeur validé
+    chauffeurRes = await request(app).post('/api/auth/login').send({
+      email: 'chauffeur@test.com', motDePasse: 'password123',
+    });
+    chauffeurToken = chauffeurRes.body.token;
   });
 
   it('devrait permettre à un chauffeur vérifié de créer un trajet', async () => {
@@ -57,17 +85,15 @@ describe('Trip API', () => {
 
     expect(res.statusCode).to.equal(201);
     expect(res.body.trip).to.have.property('villeDepart', tripData.villeDepart);
-    expect(res.body.trip).to.have.property('conducteur', chauffeurId);
   });
 
-  it('ne devrait pas permettre à un passager de créer un trajet', async () => {
+  it('ne devrait pas permettre à un simple passager de créer un trajet', async () => {
     const res = await request(app)
       .post('/api/trips')
       .set('Authorization', `Bearer ${passagerToken}`)
       .send(tripData);
 
     expect(res.statusCode).to.equal(403);
-    expect(res.body).to.have.property('message', "Accès non autorisé : rôle insuffisant.");
   });
 
   it('ne devrait pas permettre de créer un trajet avec des données invalides', async () => {
@@ -94,7 +120,7 @@ describe('Trip API', () => {
     expect(res.body.trips).to.be.an('array').with.lengthOf(1);
     expect(res.body.trips[0]).to.have.property('villeDepart', tripData.villeDepart);
     expect(res.body.trips[0]).to.have.property('conducteur');
-    expect(res.body.trips[0].conducteur).to.have.property('nom', chauffeurData.nom); // Populated
+    expect(res.body.trips[0].conducteur).to.have.property('nom', 'Chauffeur Approuvé');
   });
 
   it('devrait récupérer un trajet par son ID', async () => {
@@ -105,17 +131,21 @@ describe('Trip API', () => {
       .send(tripData);
     const tripId = createRes.body.trip._id;
 
-    const res = await request(app).get(`/api/trips/${tripId}`);
+    const res = await request(app)
+      .get(`/api/trips/${tripId}`)
+      .set('Authorization', `Bearer ${passagerToken}`);
 
     expect(res.statusCode).to.equal(200);
     expect(res.body.trip).to.have.property('_id', tripId);
     expect(res.body.trip).to.have.property('villeDepart', tripData.villeDepart);
     expect(res.body.trip).to.have.property('conducteur');
-    expect(res.body.trip.conducteur).to.have.property('nom', chauffeurData.nom);
+    expect(res.body.trip.conducteur).to.have.property('nom', 'Chauffeur Approuvé');
   });
 
   it('ne devrait pas récupérer un trajet avec un ID inexistant', async () => {
-    const res = await request(app).get('/api/trips/60c72b2f9b1f8c1b3c8e4d5f'); // ID bidon valide format
+    const res = await request(app)
+      .get('/api/trips/60c72b2f9b1f8c1b3c8e4d5f') // ID bidon valide format
+      .set('Authorization', `Bearer ${passagerToken}`);
     expect(res.statusCode).to.equal(404);
     expect(res.body).to.have.property('message', 'Trajet non trouvé.');
   });

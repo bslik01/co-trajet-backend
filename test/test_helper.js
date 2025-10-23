@@ -1,42 +1,46 @@
 // test/test_helper.js
-require('dotenv').config({ path: './.env' }); // S'assurer que les variables d'environnement sont chargées
+require('dotenv').config({ path: './.env' });
 
 const mongoose = require('mongoose');
-const app = require('../src/app'); // Importez votre application Express
 const User = require('../src/models/User.model');
 const Trip = require('../src/models/Trip.model');
-const createDefaultAdmin = require('../src/utils/createDefaultAdmin');
+const Booking = require('../src/models/Booking.model');
+// Il est crucial d'importer app APRÈS dotenv pour que les variables d'env soient chargées.
+const app = require('../src/app');
 
-// Définir la base de données de test
-const MONGO_URI_TEST = process.env.MONGO_URI_TEST;
+const MONGO_URI_TEST = process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/cotrajet_test';
 
-// Se connecter à la base de données avant tous les tests
+// Connexion avant tous les tests
 before(async () => {
-  try {
-    await mongoose.createConnection(MONGO_URI_TEST);
-    console.log(`Connecté à la base de données de test: ${MONGO_URI_TEST}`);
-  } catch (error) {
-    console.error(`Erreur de connexion à la base de données de test: ${error.message}`);
-    process.exit(1); // Quitte si la connexion échoue
-  }
+  await mongoose.createConnection(MONGO_URI_TEST, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  });
 });
 
-// Nettoyer la base de données avant chaque test pour s'assurer de l'isolement
+// Nettoyage avant chaque test
 beforeEach(async () => {
-  // Supprimer toutes les collections
   const collections = mongoose.connection.collections;
   for (const key in collections) {
-    const collection = collections[key];
-    await collection.deleteMany({});
+    await collections[key].deleteMany({});
   }
-  // On pourrait aussi insérer des données de test ici si nécessaire pour certains scénarios
-  createDefaultAdmin();
+  // Créer l'admin par défaut pour chaque test isolé
+  const adminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+  const salt = await require('bcryptjs').genSalt(10);
+  const hashedPassword = await require('bcryptjs').hash(adminPassword, salt);
+  await new User({
+    nom: process.env.DEFAULT_ADMIN_NOM,
+    email: process.env.DEFAULT_ADMIN_EMAIL,
+    motDePasseHash: hashedPassword,
+    role: 'admin',
+    isChauffeurVerified: true,
+  }).save();
 });
 
-// Déconnecter de la base de données après tous les tests
+// Déconnexion après tous les tests
 after(async () => {
   await mongoose.connection.close();
-  console.log('Déconnecté de la base de données de test.');
 });
 
-module.exports = { app }; // Exporter l'application Express pour Supertest
+// Exporter l'application pour Supertest
+module.exports = { app };

@@ -1,14 +1,14 @@
 # Backend de l'Application "Co-Trajet"
 
-![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)![JWT](https://img.shields.io/badge/JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)![Mocha](https://img.shields.io/badge/Mocha-8D6748?style=for-the-badge&logo=mocha&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)![Express.js](https://img.shields.io/badge/Express.js-000000?style=for-the-badge&logo=express&logoColor=white)![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)![Cloudinary](https://img.shields.io/badge/Cloudinary-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)![Mocha](https://img.shields.io/badge/Mocha-8D6748?style=for-the-badge&logo=mocha&logoColor=white)
 
-Ce dépôt contient le code source du backend pour **Co-Trajet**, une application de covoiturage moderne. L'API est développée avec Node.js et Express, utilise MongoDB comme base de données, et est sécurisée par un système d'authentification JWT avec une gestion fine des rôles (Passager, Chauffeur, Admin).
+Ce dépôt contient le code source de l'API backend pour **Co-Trajet**, une application de covoiturage conçue autour de la confiance et de la sécurité. Développée avec Node.js/Express et MongoDB, cette API RESTful met en œuvre un système de vérification de chauffeur multi-niveaux, une gestion fine des rôles, et une architecture de gestion de fichiers sécurisée via Cloudinary.
 
-Le projet met un accent particulier sur la qualité du code, la maintenabilité et la robustesse, avec une suite de tests automatisés couvrant les fonctionnalités critiques.
+Le projet met un accent particulier sur la qualité du code, la maintenabilité et la robustesse, avec une suite complète de tests d'intégration pour assurer la fiabilité de chaque endpoint.
 
 ## Table des Matières
 
-- [Fonctionnalités Clés](#fonctionnalités-clés)
+- [Vision et Fonctionnalités Clés](#vision-et-fonctionnalités-clés)
 - [Architecture et Technologies](#architecture-et-technologies)
 - [Structure du Projet](#structure-du-projet)
 - [Démarrage Rapide](#démarrage-rapide)
@@ -18,31 +18,39 @@ Le projet met un accent particulier sur la qualité du code, la maintenabilité 
 - [Variables d'Environnement](#variables-denvironnement)
 - [Documentation de l'API](#documentation-de-lapi)
 - [Tests Automatisés](#tests-automatisés)
-- [Roadmap (Fonctionnalités Futures)](#roadmap-fonctionnalités-futures)
+- [Prochaines Étapes](#prochaines-étapes)
 - [Licence](#licence)
 
-## Fonctionnalités Clés
+## Vision et Fonctionnalités Clés
 
-- **Gestion des Utilisateurs :** Inscription et connexion sécurisées.
-- **Système de Rôles :** Permissions distinctes pour `Passager`, `Chauffeur`, et `Admin`.
-- **Validation des Chauffeurs :** Un processus de validation géré par un administrateur pour garantir la confiance et la sécurité.
-- **Gestion des Trajets :** Publication de nouveaux trajets par les chauffeurs vérifiés.
-- **Recherche de Trajets :** API de recherche flexible avec filtres (villes, date).
-- **API RESTful Sécurisée :** Authentification par token JWT pour protéger les routes sensibles.
-- **Validation des Données :** Validation robuste des entrées pour prévenir les erreurs et les injections.
-- **Tests Automatisés :** Suite de tests d'intégration pour assurer la fiabilité de l'API.
+La mission de Co-Trajet est de construire la plateforme de covoiturage la plus fiable du marché, où la sécurité et la confiance sont au cœur de l'expérience.
+
+-   **Système de Confiance Avancé :**
+    -   **Vérification de Chauffeur Multi-Documents :** Processus de validation professionnel exigeant CNI, permis de conduire, carte grise, assurance, etc.
+    -   **Validation Granulaire :** Les administrateurs peuvent approuver ou rejeter chaque document individuellement, offrant un feedback précis aux candidats.
+    -   **Gestion Sécurisée des Fichiers :** Utilisation de signatures sécurisées pour l'upload direct vers **Cloudinary**, garantissant que les documents sensibles ne transitent jamais par notre serveur.
+
+-   **Gestion des Trajets et Réservations :**
+    -   Publication, modification et annulation de trajets pour les chauffeurs vérifiés.
+    -   Système de réservation de places avec mise à jour en temps réel de la disponibilité.
+    -   Consultation des trajets réservés pour les passagers et des listes de passagers pour les chauffeurs.
+
+-   **API RESTful Sécurisée :**
+    -   Authentification par token JWT.
+    -   Gestion des rôles (`Passager`, `Chauffeur`, `Admin`) avec des middlewares d'autorisation.
+    -   Validation et sanitization des entrées pour se prémunir contre les vulnérabilités courantes.
 
 ## Architecture et Technologies
 
-- **Framework :** [Express.js](https://expressjs.com/)
-- **Base de Données :** [MongoDB](https://www.mongodb.com/) avec [Mongoose](https://mongoosejs.com/) comme ODM
-- **Authentification :** JSON Web Tokens ([jsonwebtoken](https://github.com/auth0/node-jsonwebtoken))
-- **Sécurité :** Hachage des mots de passe avec [bcrypt.js](https://github.com/dcodeIO/bcrypt.js)
-- **Validation :** [express-validator](https://express-validator.github.io/docs/)
-- **Gestion des Variables d'Environnement :** [dotenv](https://github.com/motdotla/dotenv)
-- **Framework de Test :** [Mocha](https://mochajs.org/)
-- **Bibliothèque d'Assertions :** [Chai](https://www.chaijs.com/)
-- **Tests HTTP :** [Supertest](https://github.com/visionmedia/supertest)
+-   **Framework :** [Express.js](https://expressjs.com/)
+-   **Base de Données :** [MongoDB](https://www.mongodb.com/) avec [Mongoose](https://mongoosejs.com/) comme ODM
+-   **Stockage de Fichiers :** [Cloudinary](https://cloudinary.com/) (pour les documents de vérification)
+-   **Authentification :** JSON Web Tokens ([jsonwebtoken](https://github.com/auth0/node-jsonwebtoken))
+-   **Sécurité :** Hachage des mots de passe avec [bcrypt.js](https://github.com/dcodeIO/bcrypt.js)
+-   **Validation :** [express-validator](https://express-validator.github.io/docs/)
+-   **Gestion des Variables d'Environnement :** [dotenv](https://github.com/motdotla/dotenv)
+-   **Framework de Test :** [Mocha](https://mochajs.org/) & [Chai](https://www.chaijs.com/)
+-   **Tests HTTP :** [Supertest](https://github.com/visionmedia/supertest)
 
 ## Structure du Projet
 
@@ -50,52 +58,52 @@ Le projet met un accent particulier sur la qualité du code, la maintenabilité 
 co-trajet-backend/
 ├── src/
 │   ├── config/
-│   │   └── db.js                 # Configuration de la connexion MongoDB
+│   │   ├── cloudinary.js         # Configuration de Cloudinary
+│   │   └── db.js                 # Configuration de MongoDB
 │   ├── controllers/
+│   │   ├── admin.controller.js   # Logique des actions de l'admin
 │   │   ├── auth.controller.js
 │   │   ├── trip.controller.js
-│   │   └── user.controller.js    # Logique métier des routes
-│   ├── middleware/
-│   │   ├── auth.middleware.js    # Vérification du token JWT
-│   │   ├── authorizeRoles.middleware.js # Vérification des rôles
-│   │   └── validation.js         # Règles de validation des entrées
+│   │   ├── upload.controller.js  # Logique de signature d'upload
+│   │   └── user.controller.js
+│   ├── middleware/               # ...
 │   ├── models/
-│   │   ├── User.model.js
-│   │   └── Trip.model.js         # Schémas Mongoose
+│   │   ├── Booking.model.js
+│   │   ├── Trip.model.js
+│   │   └── User.model.js         # Modèle utilisateur avec profil chauffeur détaillé
 │   ├── routes/
 │   │   ├── admin.routes.js
 │   │   ├── auth.routes.js
 │   │   ├── trip.routes.js
-│   │   └── user.routes.js        # Définition des endpoints de l'API
-│   ├── utils/
-│   │   └── createDefaultAdmin.js # Script pour créer l'admin par défaut
-│   └── app.js                    # Point d'entrée de l'application Express
+│   │   ├── upload.routes.js
+│   │   └── user.routes.js
+│   ├── utils/                    # ...
+│   └── app.js                    # Point d'entrée de l'application
 ├── test/
+│   ├── admin.test.js
 │   ├── auth.test.js
+│   ├── chauffeur_flow.test.js
 │   ├── trip.test.js
-│   ├── user.test.js
-│   └── test_helper.js            # Configuration et nettoyage de la DB de test
-├── .env.example                  # Fichier d'exemple pour les variables d'environnement
-├── .gitignore
+│   ├── upload.test.js
+│   └── test_helper.js
+├── .env
 ├── package.json
 └── README.md
 ```
 
 ## Démarrage Rapide
 
-Suivez ces étapes pour configurer et lancer le projet en local.
-
 ### Prérequis
 
-- [Node.js](https://nodejs.org/) (version 14.x ou supérieure)
-- npm ou [yarn](https://yarnpkg.com/)
-- Une instance de [MongoDB](https://www.mongodb.com/) en cours d'exécution (localement ou via Atlas).
+-   [Node.js](https://nodejs.org/) (v16.x ou supérieure)
+-   Un compte [Cloudinary](https://cloudinary.com/) (le plan gratuit est suffisant pour démarrer)
+-   Une instance de [MongoDB](https://www.mongodb.com/) en cours d'exécution.
 
 ### Installation
 
 1.  **Cloner le dépôt :**
     ```bash
-    git clone https://github.com/bslik01/co-trajet-backend.git
+    git clone https://github.com/votre-nom-utilisateur/co-trajet-backend.git
     cd co-trajet-backend
     ```
 
@@ -105,81 +113,83 @@ Suivez ces étapes pour configurer et lancer le projet en local.
     ```
 
 3.  **Configurer les variables d'environnement :**
-    Créez un fichier `.env` à la racine du projet en copiant le modèle `.env.example` et remplissez les valeurs.
+    Créez un fichier `.env` qui contiendra les variables d'envirnnment du projet.
     ```bash
     touch .env
     ```
-    Modifiez ensuite le fichier `.env` avec vos propres configurations.
 
 ### Lancement du Serveur
 
--   **En mode développement :**
-    ```bash
-    npm run dev  # Si vous avez configuré nodemon
-    ```
-
--   **En mode production :**
-    ```bash
-    npm start
-    ```
-
-Le serveur devrait démarrer sur le port défini dans votre fichier `.env` (par défaut `5000`).
+```bash
+npm start
+```
+Le serveur démarrera sur le port défini dans votre fichier `.env` (par défaut `5000`).
 
 ## Variables d'Environnement
 
-Le fichier `.env` est crucial pour le bon fonctionnement de l'application.
+Le fichier `.env` est crucial. Assurez-vous de configurer toutes les clés.
 
 ```ini
-# Port du serveur
+# --- Application ---
 PORT=5000
 
-# URI de connexion à la base de données de développement
-MONGO_URI=mongodb://localhost:2717/cotrajet
-
-# URI de connexion à la base de données de test (pour `npm test`)
+# --- MongoDB ---
+MONGO_URI=mongodb://localhost:27017/cotrajet
 MONGO_URI_TEST=mongodb://localhost:27017/cotrajet_test
 
-# Clé secrète pour signer les tokens JWT (TRÈS IMPORTANT : utilisez une chaîne longue et aléatoire)
+# --- Sécurité ---
 JWT_SECRET=votre_secret_jwt_tres_long_et_complexe
 
-# Identifiants pour l'administrateur par défaut (créé au premier lancement)
+# --- Admin par Défaut ---
 DEFAULT_ADMIN_EMAIL=admin@cotrajet.com
 DEFAULT_ADMIN_PASSWORD=ChangezCeMotDePasse!
-DEFAULT_ADMIN_NOM=Administrateur Co-Trajet
+DEFAULT_ADMIN_NOM=admin
+
+# --- Cloudinary ---
+CLOUDINARY_CLOUD_NAME=votre_cloud_name
+CLOUDINARY_API_KEY=votre_api_key
+CLOUDINARY_API_SECRET=votre_api_secret
 ```
 
 ## Documentation de l'API
 
-L'API est structurée par modules. Voici les principaux endpoints disponibles :
+L'API est structurée pour suivre les meilleures pratiques RESTful.
 
 <details>
-<summary><strong>Authentification (`/api/auth`)</strong></summary>
+<summary><strong>Authentification (`/api/auth`) & Uploads (`/api/uploads`)</strong></summary>
 
-| Méthode | Route              | Accès  | Description                                |
-| :------ | :----------------- | :----- | :----------------------------------------- |
-| `POST`  | `/register`        | Public | Inscription d'un nouvel utilisateur.       |
-| `POST`  | `/login`           | Public | Connexion d'un utilisateur et obtention d'un JWT. |
+| Méthode | Route                       | Accès  | Description                                                         |
+| :------ | :-------------------------- | :----- | :------------------------------------------------------------------ |
+| `POST`  | `/auth/register`            | Public | Inscription d'un nouvel utilisateur.                                |
+| `POST`  | `/auth/login`               | Public | Connexion et obtention d'un JWT.                                    |
+| `POST`  | `/uploads/generate-signature`| Privé  | Génère une signature sécurisée pour un upload direct vers Cloudinary. |
 
 </details>
 
 <details>
-<summary><strong>Utilisateurs (`/api/users`)</strong></summary>
+<summary><strong>Utilisateurs & Demande Chauffeur (`/api/users`)</strong></summary>
 
 | Méthode | Route                  | Accès          | Description                                           |
 | :------ | :--------------------- | :------------- | :---------------------------------------------------- |
-| `GET`   | `/me`                  | Privé (Connecté) | Récupère le profil de l'utilisateur authentifié.      |
-| `PUT`   | `/become-chauffeur`    | Privé (Passager) | Soumet une demande pour devenir chauffeur avec les documents requis. |
+| `GET`   | `/me`                  | Privé          | Récupère le profil de l'utilisateur authentifié.      |
+| `POST`  | `/become-chauffeur`    | Privé (Passager) | Soumet le dossier de candidature chauffeur complet.   |
+| `GET`   | `/me/trips`            | Privé (Chauffeur)| Liste les trajets publiés par le chauffeur connecté.   |
+| `GET`   | `/me/bookings`         | Privé          | Liste les réservations effectuées par l'utilisateur.     |
 
 </details>
 
 <details>
-<summary><strong>Trajets (`/api/trips`)</strong></summary>
+<summary><strong>Trajets & Réservations (`/api/trips`)</strong></summary>
 
 | Méthode | Route              | Accès                   | Description                                             |
 | :------ | :----------------- | :---------------------- | :------------------------------------------------------ |
 | `POST`  | `/`                | Privé (Chauffeur Vérifié) | Publie une nouvelle offre de trajet.                  |
-| `GET`   | `/`                | Public                  | Recherche les trajets disponibles avec des filtres (villeDepart, villeArrivee, dateDepart). |
-| `GET`   | `/:id`             | Public                  | Récupère les détails d'un trajet spécifique par son ID. |
+| `GET`   | `/`                | Public                  | Recherche les trajets disponibles.                     |
+| `GET`   | `/:id`             | Privé                   | Récupère les détails d'un trajet spécifique.          |
+| `POST`  | `/:id/book`        | Privé                   | Réserve une ou plusieurs places sur un trajet.         |
+| `GET`   | `/:id/passengers`  | Privé (Chauffeur du trajet)| Liste les passagers ayant réservé sur ce trajet.       |
+| `PUT`   | `/:id`             | Privé (Chauffeur du trajet)| Modifie un trajet (si aucune réservation).           |
+| `DELETE`| `/:id`             | Privé (Chauffeur du trajet)| Annule un trajet et ses réservations associées.        |
 
 </details>
 
@@ -188,32 +198,21 @@ L'API est structurée par modules. Voici les principaux endpoints disponibles :
 
 | Méthode | Route                               | Accès         | Description                                        |
 | :------ | :---------------------------------- | :------------ | :------------------------------------------------- |
-| `GET`   | `/chauffeur-requests`               | Privé (Admin) | Liste toutes les demandes de chauffeur en attente. |
-| `PUT`   | `/chauffeur-requests/:id/approve`   | Privé (Admin) | Approuve la demande de statut chauffeur d'un utilisateur. |
-| `PUT`   | `/chauffeur-requests/:id/reject`    | Privé (Admin) | Rejette la demande de statut chauffeur d'un utilisateur. |
+| `GET`   | `/chauffeur-requests`               | Privé (Admin) | Liste toutes les demandes chauffeur en attente/révision. |
+| `PUT`   | `/chauffeur-requests/:userId/documents`| Privé (Admin) | Approuve ou rejette un document spécifique.        |
+| `PUT`   | `/chauffeur-requests/:userId/activate` | Privé (Admin) | Active le profil chauffeur après validation complète. |
 
 </details>
 
 ## Tests Automatisés
 
-Le projet inclut une suite de tests d'intégration pour garantir la stabilité et la non-régression de l'API.
+Le projet est couvert par une suite de tests d'intégration complète pour valider chaque aspect de l'API, du flux d'authentification au processus de vérification de chauffeur.
 
-Pour lancer les tests, assurez-vous d'avoir configuré votre `MONGO_URI_TEST` dans le fichier `.env`.
-
+Pour lancer la suite de tests, exécutez :
 ```bash
 npm test
 ```
-
-Cette commande exécutera tous les fichiers de test dans le dossier `/test` à l'aide de Mocha. Les tests utilisent une base de données séparée qui est nettoyée avant chaque exécution.
-
-## Roadmap (Fonctionnalités Futures)
-
--   [ ] **Système de Réservation :** Permettre aux passagers de réserver des places.
--   [ ] **Notifications :** Notifications en temps réel (ex: demande de réservation, confirmation, rappel de trajet).
--   [ ] **Messagerie Interne :** Un chat entre chauffeurs et passagers.
--   [ ] **Système de Notation :** Évaluation des chauffeurs et des passagers après un trajet.
--   [ ] **Intégration de Paiement :** Gestion des transactions via une passerelle de paiement.
--   [ ] **Déploiement :** Mise en place d'un pipeline CI/CD pour un déploiement sur une plateforme cloud (Heroku, AWS, etc.).
+Les tests utilisent une base de données dédiée (`MONGO_URI_TEST`) qui est automatiquement nettoyée avant chaque exécution pour garantir l'isolement et la fiabilité.
 
 ## Licence
 

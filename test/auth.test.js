@@ -3,25 +3,12 @@ const request = require('supertest');
 const { expect } = require('chai');
 const { app } = require('./test_helper'); // Importe l'app Express et configure la DB de test
 
-describe('Auth API', () => {
+describe('API d\'Authentification', () => {
   const userCredentials = {
     nom: 'Test User',
     email: 'test@example.com',
     motDePasse: 'password123',
   };
-
-  const adminCredentials = {
-    nom: process.env.DEFAULT_ADMIN_NOM,
-    email: process.env.DEFAULT_ADMIN_EMAIL,
-    motDePasse: process.env.DEFAULT_ADMIN_PASSWORD,
-  };
-  
-  beforeEach(async () => {
-    // Connecter l'admin par défaut (qui est créé par test_helper)
-    const resAdmin = await request(app)
-      .post('/api/auth/login')
-      .send({ email: adminCredentials.email, motDePasse: adminCredentials.motDePasse });
-  });
 
   // Test d'inscription
   it('devrait permettre à un utilisateur de s\'inscrire', async () => {
@@ -92,13 +79,13 @@ describe('Auth API', () => {
     // Ou, comme l'app est importée une fois, il faudrait simuler le démarrage de l'app.
     // Pour l'instant, on se base sur le fait que test_helper nettoie et createDefaultAdmin est appelé.
     // Plus simple : on essaie de se connecter avec l'admin par défaut.
-    const res = await request(app)
-      .post('/api/auth/login')
-      .send({ email: adminCredentials.email, motDePasse: adminCredentials.motDePasse });
+    const res = await request(app).post('/api/auth/login').send({
+      email: process.env.DEFAULT_ADMIN_EMAIL, motDePasse: process.env.DEFAULT_ADMIN_PASSWORD,
+    });
 
     expect(res.statusCode).to.equal(200);
     expect(res.body).to.have.property('token');
-    expect(res.body.user).to.have.property('email', adminCredentials.email);
+    expect(res.body.user).to.have.property('email', process.env.DEFAULT_ADMIN_EMAIL);
     expect(res.body.user).to.have.property('role', 'admin');
   });
 });
