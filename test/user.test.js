@@ -34,7 +34,7 @@ describe('User Flow API (Chauffeur Application)', () => {
 
   beforeEach(async () => {
     const res = await request(app).post('/api/auth/register').send(passengerData);
-    passengerToken = res.body.token;
+    passengerToken = res.body.accessToken;
     passengerId = res.body.user.id;
   });
 

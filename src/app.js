@@ -1,6 +1,9 @@
+// src/app.js
 require('dotenv').config();
 
 const express = require('express');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/auth.routes');
 const tripRoutes = require('./routes/trip.routes');
@@ -11,15 +14,18 @@ const createDefaultAdmin = require('./utils/createDefaultAdmin');
 
 const app = express();
 
-// 1. Connecter à la base de données et créer l'admin par défaut
+// Connexion à la base de données
 connectDB().then(() => {
   createDefaultAdmin();
 });
 
-// 2. Middlewares
+// Middlewares
 app.use(express.json());
 
-// 3. Routes
+// Route pour la documentation API
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Routes de l'application
 app.use('/api/auth', authRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
@@ -28,11 +34,12 @@ app.use('/api/uploads', uploadRoutes);
 
 // Route de test
 app.get('/', (req, res) => {
-  res.send('API Co-Trajet Backend fonctionne!');
+  res.send('API Co-Trajet Backend fonctionne! Allez sur /api-docs pour la documentation.');
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => console.log(`Serveur démarré sur le port ${PORT}`));
 
+// Exporter l'application pour les tests
 module.exports = app;

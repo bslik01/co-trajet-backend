@@ -35,13 +35,13 @@ describe('API de Gestion Administrateur', () => {
     const adminRes = await request(app)
       .post('/api/auth/login')
       .send({ email: process.env.DEFAULT_ADMIN_EMAIL, motDePasse: process.env.DEFAULT_ADMIN_PASSWORD });
-    adminToken = adminRes.body.token;
+    adminToken = adminRes.body.accessToken;
 
     // Création d'un passager qui soumet une demande
     const passengerRes = await request(app)
       .post('/api/auth/register')
       .send({ nom: 'Applicant User', email: 'applicant@test.com', motDePasse: 'password123' });
-    passengerToken = passengerRes.body.token;
+    passengerToken = passengerRes.body.accessToken;
     passengerId = passengerRes.body.user.id;
 
     await request(app)

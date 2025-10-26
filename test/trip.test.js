@@ -20,19 +20,19 @@ describe('API des Trajets', () => {
     const adminRes = await request(app).post('/api/auth/login').send({
       email: process.env.DEFAULT_ADMIN_EMAIL, motDePasse: process.env.DEFAULT_ADMIN_PASSWORD,
     });
-    const adminToken = adminRes.body.token;
+    const adminToken = adminRes.body.accessToken;
 
     // 2. Création du futur chauffeur et du passager
     let chauffeurRes = await request(app).post('/api/auth/register').send({
       nom: 'Chauffeur Approuvé', email: 'chauffeur@test.com', motDePasse: 'password123',
     });
-    chauffeurToken = chauffeurRes.body.token;
+    chauffeurToken = chauffeurRes.body.accessToken;
     chauffeurId = chauffeurRes.body.user.id;
     
     const passagerRes = await request(app).post('/api/auth/register').send({
       nom: 'Simple Passager', email: 'passager@test.com', motDePasse: 'password123',
     });
-    passagerToken = passagerRes.body.token;
+    passagerToken = passagerRes.body.accessToken;
 
     // 3. Le futur chauffeur soumet sa demande
     const applicationData = {
@@ -74,7 +74,7 @@ describe('API des Trajets', () => {
     chauffeurRes = await request(app).post('/api/auth/login').send({
       email: 'chauffeur@test.com', motDePasse: 'password123',
     });
-    chauffeurToken = chauffeurRes.body.token;
+    chauffeurToken = chauffeurRes.body.accessToken;
   });
 
   it('devrait permettre à un chauffeur vérifié de créer un trajet', async () => {

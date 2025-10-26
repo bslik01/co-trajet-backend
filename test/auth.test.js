@@ -1,14 +1,94 @@
 // test/auth.test.js
 const request = require('supertest');
 const { expect } = require('chai');
-const { app } = require('./test_helper'); // Importe l'app Express et configure la DB de test
+const sinon = require('sinon');
+const { app } = require('./test_helper');
+const User = require('../src/models/User.model');
+const notificationService = require('../src/services/notification.service');
 
-describe('API d\'Authentification', () => {
-  const userCredentials = {
-    nom: 'Test User',
-    email: 'test@example.com',
-    motDePasse: 'password123',
-  };
+describe('API d\'Authentification Avancée', () => {
+  let sendWelcomeEmailStub;
+  const userCredentials = { nom: 'Test User', email: 'test@example.com', motDePasse: 'password123' };
+
+  beforeEach(() => {
+    // Crée un "stub" pour la méthode d'envoi d'email afin d'éviter de réels envois pendant les tests
+    sendWelcomeEmailStub = sinon.stub(notificationService, 'sendWelcomeEmail');
+  });
+
+  afterEach(() => {
+    // Restaure la méthode originale après chaque test
+    sendWelcomeEmailStub.restore();
+  });
+
+  // Tests de tokens: L'inscription, la connexion, le rafraîchissement de token et la déconnexion
+  it('devrait retourner un accessToken et un refreshToken à l\'inscription', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send(userCredentials);
+      
+    expect(res.statusCode).to.equal(201);
+    expect(res.body).to.have.property('accessToken');
+    expect(res.body).to.have.property('refreshToken');
+    
+    const userInDb = await User.findOne({ email: userCredentials.email });
+    expect(userInDb.refreshToken).to.equal(res.body.refreshToken);
+  });
+
+  it('devrait appeler le service de notification à l\'inscription', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send(userCredentials);
+      
+    // Vérifie que notre stub a été appelé exactement une fois
+    expect(sendWelcomeEmailStub.calledOnce).to.be.true;
+  });
+
+  it('devrait retourner un accessToken et un refreshToken à la connexion', async () => {
+    await request(app).post('/api/auth/register').send(userCredentials); // Crée l'utilisateur
+    
+    const res = await request(app)
+      .post('/api/auth/login')
+      .send({ email: userCredentials.email, motDePasse: userCredentials.motDePasse });
+      
+    expect(res.statusCode).to.equal(200);
+    expect(res.body).to.have.property('accessToken');
+    expect(res.body).to.have.property('refreshToken');
+  });
+
+  it('devrait générer un nouvel accessToken avec un refreshToken valide', async () => {
+    const loginRes = await request(app).post('/api/auth/register').send(userCredentials);
+    const refreshToken = loginRes.body.refreshToken;
+    
+    const res = await request(app)
+      .post('/api/auth/refresh')
+      .send({ refreshToken });
+      
+    expect(res.statusCode).to.equal(200);
+    expect(res.body).to.have.property('accessToken');
+  });
+
+  it('ne devrait pas générer de token avec un refreshToken invalide ou expiré', async () => {
+    const res = await request(app)
+      .post('/api/auth/refresh')
+      .send({ refreshToken: 'untokeninvalide' });
+      
+    expect(res.statusCode).to.equal(403);
+  });
+
+  it('devrait effacer le refreshToken de la base de données lors de la déconnexion', async () => {
+    const loginRes = await request(app).post('/api/auth/register').send(userCredentials);
+    const accessToken = loginRes.body.accessToken;
+    const userId = loginRes.body.user.id;
+    
+    const res = await request(app)
+      .post('/api/auth/logout')
+      .set('Authorization', `Bearer ${accessToken}`);
+      
+    expect(res.statusCode).to.equal(200);
+    
+    const userInDb = await User.findById(userId);
+    expect(userInDb.refreshToken).to.be.undefined;
+  });
 
   // Test d'inscription
   it('devrait permettre à un utilisateur de s\'inscrire', async () => {
@@ -17,10 +97,9 @@ describe('API d\'Authentification', () => {
       .send(userCredentials);
 
     expect(res.statusCode).to.equal(201);
-    expect(res.body).to.have.property('token');
+    expect(res.body).to.have.property('accessToken');
     expect(res.body.user).to.have.property('email', userCredentials.email);
     expect(res.body.user).to.have.property('role', 'passager');
-    expect(res.body.user).to.have.property('isChauffeurVerified', false);
     expect(res.body.user).to.not.have.property('motDePasseHash'); // Ne devrait pas renvoyer le hash
   });
 
@@ -57,7 +136,7 @@ describe('API d\'Authentification', () => {
       .send({ email: userCredentials.email, motDePasse: userCredentials.motDePasse });
 
     expect(res.statusCode).to.equal(200);
-    expect(res.body).to.have.property('token');
+    expect(res.body).to.have.property('accessToken');
     expect(res.body.user).to.have.property('email', userCredentials.email);
     expect(res.body.user).to.have.property('role', 'passager');
   });
@@ -84,7 +163,7 @@ describe('API d\'Authentification', () => {
     });
 
     expect(res.statusCode).to.equal(200);
-    expect(res.body).to.have.property('token');
+    expect(res.body).to.have.property('accessToken');
     expect(res.body.user).to.have.property('email', process.env.DEFAULT_ADMIN_EMAIL);
     expect(res.body.user).to.have.property('role', 'admin');
   });

@@ -12,7 +12,7 @@ describe('Flux de Demande Chauffeur', () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({ nom: 'Future Chauffeur', email: 'passenger@test.com', motDePasse: 'password123' });
-    passengerToken = res.body.token;
+    passengerToken = res.body.accessToken;
     passengerId = res.body.user.id;
   });
 

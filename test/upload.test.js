@@ -11,7 +11,7 @@ describe('API d\'Upload', () => {
     const res = await request(app)
       .post('/api/auth/register')
       .send({ nom: 'Uploader', email: 'uploader@test.com', motDePasse: 'password123' });
-    userToken = res.body.token;
+    userToken = res.body.accessToken;
   });
 
   it('devrait générer une signature Cloudinary pour un utilisateur authentifié', async () => {

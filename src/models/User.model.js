@@ -36,7 +36,8 @@ const userSchema = new mongoose.Schema({
     default: false
   },
 
-  // --- SECTION PROFIL CHAUFFEUR RENFORCÉE ---
+  refreshToken: { type: String },
+
   chauffeurProfile: {
     requestStatus: {
       type: String,
@@ -51,19 +52,19 @@ const userSchema = new mongoose.Schema({
     },
 
     vehicleDetails: {
-      make: { type: String, trim: true, default: '' },       // Marque
-      model: { type: String, trim: true, default: '' },      // Modèle
+      make: { type: String, trim: true, default: '' },
+      model: { type: String, trim: true, default: '' },
       year: { type: Number, min: 1990 },
       color: { type: String, trim: true, default: '' },
-      licensePlate: { type: String, trim: true, uppercase: true, default: '' }, // Immatriculation
+      licensePlate: { type: String, trim: true, uppercase: true, default: '' },
     },
 
     vehicleDocuments: {
-      vehicleRegistration: { type: documentStatusSchema, default: () => ({}) }, // Carte Grise
-      technicalInspection: { type: documentStatusSchema, default: () => ({}) }, // Visite Technique
-      insuranceCertificate: { type: documentStatusSchema, default: () => ({}) }, // Attestation d'Assurance
-      vehiclePictureFront: { type: documentStatusSchema, default: () => ({}) },    // Photo avant
-      vehiclePictureSide: { type: documentStatusSchema, default: () => ({}) },     // Photo côté
+      vehicleRegistration: { type: documentStatusSchema, default: () => ({}) },
+      technicalInspection: { type: documentStatusSchema, default: () => ({}) },
+      insuranceCertificate: { type: documentStatusSchema, default: () => ({}) },
+      vehiclePictureFront: { type: documentStatusSchema, default: () => ({}) },
+      vehiclePictureSide: { type: documentStatusSchema, default: () => ({}) },
     },
 
     submittedAt: { type: Date }

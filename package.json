@@ -18,11 +18,15 @@
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.18.3"
+    "mongoose": "^8.18.3",
+    "nodemailer": "^7.0.10",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "chai": "^6.2.0",
     "mocha": "^11.7.2",
+    "sinon": "^21.0.0",
     "supertest": "^7.1.4"
   }
 }
