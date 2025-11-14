@@ -2,34 +2,109 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/user.controller');
+const reviewController = require('../controllers/review.controller');
 const auth = require('../middleware/auth.middleware');
 const authorize = require('../middleware/authorizeRoles.middleware');
-const reviewController = require('../controllers/review.controller');
+const { idParamValidation } = require('../middleware/validation');
 
-// @route   GET /api/users/me
-// @desc    Obtenir le profil de l'utilisateur connecté
-// @access  Private
+/**
+ * @swagger
+ * tags:
+ *   name: Utilisateurs
+ *   description: Gestion des profils utilisateurs et actions spécifiques.
+ */
+
+/**
+ * @swagger
+ * /api/users/me:
+ *   get:
+ *     summary: Obtenir le profil de l'utilisateur actuellement connecté
+ *     tags: [Mon Compte]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Données du profil de l'utilisateur.
+ *       401:
+ *         description: Non autorisé.
+ */
 router.get('/me', auth, userController.getMe);
 
-// @route   PUT /api/users/become-chauffeur
-// @desc    Soumettre une demande pour devenir chauffeur
-// @access  Private (Passager)
-// @route   POST /api/users/become-chauffeur
-router.post('/become-chauffeur', auth, authorize('passager'), userController.submitChauffeurApplication);
+/**
+ * @swagger
+ * /api/users/become-chauffeur:
+ *   post:
+ *     summary: Soumettre ou mettre à jour une candidature pour devenir chauffeur
+ *     tags: [Utilisateurs]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *                identityDocuments:
+ *                  type: object
+ *                vehicleDetails:
+ *                  type: object
+ *                vehicleDocuments:
+ *                  type: object
+ *     responses:
+ *       200:
+ *         description: Candidature soumise avec succès.
+ *       400:
+ *         description: L'utilisateur est déjà un chauffeur vérifié.
+ */
+router.post('/become-chauffeur', auth, userController.submitChauffeurApplication);
 
-// @route   GET /api/users/me/trips
-// @desc    Obtenir les trajets de l'utilisateur connecté
-// @access  Private (Chauffeur)
+/**
+ * @swagger
+ * /api/users/me/trips:
+ *   get:
+ *     summary: Obtenir les trajets publiés par le chauffeur connecté
+ *     tags: [Mon Compte]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Une liste des trajets publiés par l'utilisateur.
+ *       403:
+ *         description: L'utilisateur n'est pas un chauffeur.
+ */
 router.get('/me/trips', auth, authorize('chauffeur'), userController.getMyTrips);
 
-// @route   GET /api/users/me/bookings
-// @desc    Obtenir les réservations de l'utilisateur connecté
-// @access  Private
+/**
+ * @swagger
+ * /api/users/me/bookings:
+ *   get:
+ *     summary: Obtenir les réservations effectuées par l'utilisateur connecté
+ *     tags: [Mon Compte]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Une liste des réservations de l'utilisateur.
+ */
 router.get('/me/bookings', auth, userController.getMyBookings);
 
-// @route   GET /api/users/:userId/reviews
-// @desc    Obtenir les avis reçus par un utilisateur
-// @access  Public
-router.get('/:userId/reviews', reviewController.getUserReviews);
+/**
+ * @swagger
+ * /api/users/{userId}/reviews:
+ *   get:
+ *     summary: Obtenir les avis reçus par un utilisateur spécifique
+ *     tags: [Utilisateurs, Avis]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Une liste des avis reçus par l'utilisateur.
+ */
+router.get('/:userId/reviews', idParamValidation, reviewController.getUserReviews);
 
 module.exports = router;
