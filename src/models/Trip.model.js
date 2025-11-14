@@ -31,6 +31,11 @@ const tripSchema = new mongoose.Schema({
     required: true,
     min: [0, 'Le prix ne peut pas être négatif.']
   },
+  status: {
+    type: String,
+    enum: ['scheduled', 'completed', 'cancelled'], // scheduled: à venir, completed: terminé, cancelled: annulé
+    default: 'scheduled',
+  },
 }, {
   timestamps: true // Ajoute createdAt et updatedAt
 });

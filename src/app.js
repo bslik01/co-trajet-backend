@@ -11,6 +11,8 @@ const userRoutes = require('./routes/user.routes');
 const adminRoutes = require('./routes/admin.routes');
 const uploadRoutes = require('./routes/upload.routes');
 const createDefaultAdmin = require('./utils/createDefaultAdmin');
+const scheduleTripCompletionJob = require('./jobs/tripStatusUpdater'); // Importer le job
+const meRoutes = require('./routes/me.routes');
 
 const app = express();
 
@@ -18,6 +20,9 @@ const app = express();
 connectDB().then(() => {
   createDefaultAdmin();
 });
+
+// --- LANCER LES JOBS PLANIFIÉS ---
+scheduleTripCompletionJob();
 
 // Middlewares
 app.use(express.json());
@@ -31,6 +36,7 @@ app.use('/api/trips', tripRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/me', meRoutes);
 
 // Route de test
 app.get('/', (req, res) => {
