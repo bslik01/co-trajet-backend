@@ -13,6 +13,7 @@ const uploadRoutes = require('./routes/upload.routes');
 const createDefaultAdmin = require('./utils/createDefaultAdmin');
 const scheduleTripCompletionJob = require('./jobs/tripStatusUpdater'); // Importer le job
 const meRoutes = require('./routes/me.routes');
+const reviewRoutes = require('./routes/review.routes');
 
 const app = express();
 
@@ -37,6 +38,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/me', meRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Route de test
 app.get('/', (req, res) => {

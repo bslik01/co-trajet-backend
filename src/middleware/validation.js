@@ -48,3 +48,10 @@ exports.idParamValidation = [
 exports.bookTripValidation = [
   body('seatsBooked', 'Le nombre de places à réserver est requis et doit être un entier positif').isInt({ min: 1 }),
 ];
+
+exports.createReviewValidation = [
+  body('tripId', 'L\'ID du trajet est requis').isMongoId(),
+  body('recipientId', 'L\'ID du destinataire est requis').isMongoId(),
+  body('rating', 'La note est requise et doit être entre 1 et 5').isInt({ min: 1, max: 5 }),
+  body('comment', 'Le commentaire ne doit pas dépasser 500 caractères').optional().isLength({ max: 500 }),
+];

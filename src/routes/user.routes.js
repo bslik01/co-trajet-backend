@@ -4,6 +4,7 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const auth = require('../middleware/auth.middleware');
 const authorize = require('../middleware/authorizeRoles.middleware');
+const reviewController = require('../controllers/review.controller');
 
 // @route   GET /api/users/me
 // @desc    Obtenir le profil de l'utilisateur connecté
@@ -25,5 +26,10 @@ router.get('/me/trips', auth, authorize('chauffeur'), userController.getMyTrips)
 // @desc    Obtenir les réservations de l'utilisateur connecté
 // @access  Private
 router.get('/me/bookings', auth, userController.getMyBookings);
+
+// @route   GET /api/users/:userId/reviews
+// @desc    Obtenir les avis reçus par un utilisateur
+// @access  Public
+router.get('/:userId/reviews', reviewController.getUserReviews);
 
 module.exports = router;
